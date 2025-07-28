@@ -13,6 +13,7 @@
     "express-handlebars": "^8.0.3",
     "mqtt": "^5.13.3",
     "net-snmp": "^3.23.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "sqlite3": "^5.1.7"
   }
 }

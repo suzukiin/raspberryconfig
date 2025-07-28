@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const { engine } = require('express-handlebars');
+const db = require('./databases/sqlite3');
 
 app.engine('handlebars', engine());
 app.set('view engine', 'handlebars');
@@ -11,6 +12,12 @@ app.use(express.static('public'));
 
 app.get('/', (req, res) => {
   res.render('home');
+});
+
+app.get('/configsnmp', (req, res) => {
+  db.getConfigs((configs) => {
+    res.render('configs', { configs });
+  });
 });
 
 app.listen(3000, () => {
