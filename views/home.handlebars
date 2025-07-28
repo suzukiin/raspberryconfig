@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telemetria Raspberry Pi - Monitor de Temperatura</title>
+    <link rel="stylesheet" href="/stylesheets/home.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SM Telemetry</h1>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <div class="temp-display">
+                    <h3>Temperatura Atual</h3>
+                    <div class="temp-value pulse" id="currentTemp">0</div>
+                    <span class="temp-unit">°C</span>
+                    <div class="temp-status status-normal" id="tempStatus">Normal</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Histórico (últimos 10 min)</h3>
+                <div class="chart-container">
+                    <div class="chart-bars" id="chartBars">
+                        <!-- Barras serão geradas pelo JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Estatísticas</h3>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="minTemp">0</div>
+                        <span class="temp-unit">°C</span>
+                        <div class="stat-label">Mínima</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="maxTemp">0</div>
+                        <span class="temp-unit">°C</span>
+                        <div class="stat-label">Máxima</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgTemp">0</div>
+                        <span class="temp-unit">°C</span>
+                        <div class="stat-label">Média</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="temp-display">
+                    <h3>IP:</h3>
+                    <div class="temp-value pulse" id="currentIp">0.0.0.0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="device-info">
+            <h3>⚙️ Configuração dos dados SNMP</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span>Endereço IP:</span>
+                    <input type="text" id="deviceIp" value="" placeholder="SNMP IP AGENTE">
+                </div>
+                <div class="info-item">
+                    <span>Valor OID</span>
+                    <input type="text" id="deviceOid" value="" placeholder="Valor OID SNMP">
+                </div>
+                <div class="info-item">
+                    <span>Descrição:</span>
+                    <input type="text" id="deviceDescription" value="" placeholder="Descrição da OID">
+                </div>
+                <button id="saveBtn">Salvar</button>
+            </div>
+        </div>
+
+        <div class="device-info" id="savedDataContainer">
+            
+        </div>
+    </div>
+    <script src="/javascripts/home.js"></script>
+</body>
+</html>
