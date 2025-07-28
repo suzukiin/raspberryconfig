@@ -84,7 +84,6 @@ function enviarTemperatura() {
     });
     
     client.publish('temperatura/raspberry', payload);
-    console.log(`Temperatura enviada: ${temperatura}°C`);
 }
 
 // Enviar temperatura a cada 10 segundos após conectar
