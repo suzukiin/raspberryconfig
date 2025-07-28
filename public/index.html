@@ -208,8 +208,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌡️ Telemetria Raspberry Pi</h1>
-            <p>Monitoramento de Temperatura em Tempo Real</p>
+            <h1>🌡️ Dashboard SNMP + MQTT</h1>
+            <p>Monitoramento Integrado - Modelo via SNMP, Temperatura via MQTT</p>
         </div>
 
         <div class="dashboard">
@@ -251,50 +251,117 @@
         </div>
 
         <div class="device-info">
-            <h3>📊 Informações do Dispositivo</h3>
+            <h3>📊 Informações do Equipamento</h3>
             <div class="info-grid">
                 <div class="info-item">
-                    <span>Device ID:</span>
-                    <span>RPI-001</span>
+                    <span>Modelo (SNMP):</span>
+                    <span id="deviceModel">Carregando...</span>
                 </div>
                 <div class="info-item">
-                    <span>Status:</span>
-                    <span style="color: #2ecc71;">🟢 Online</span>
+                    <span>Endereço IP:</span>
+                    <span>192.168.100.18</span>
                 </div>
                 <div class="info-item">
-                    <span>Localização:</span>
-                    <span>Sala Principal</span>
+                    <span>Status SNMP:</span>
+                    <span id="snmpStatus" style="color: #f39c12;">🟡 Conectando...</span>
+                </div>
+                <div class="info-item">
+                    <span>Status MQTT:</span>
+                    <span id="mqttStatus" style="color: #f39c12;">🟡 Conectando...</span>
+                </div>
+                <div class="info-item">
+                    <span>Temperatura MQTT:</span>
+                    <span id="mqttTemperature">--°C</span>
                 </div>
                 <div class="info-item">
                     <span>Última Atualização:</span>
                     <span id="lastUpdate">--:--:--</span>
                 </div>
-                <div class="info-item">
-                    <span>Uptime:</span>
-                    <span id="uptime">2h 34m</span>
-                </div>
-                <div class="info-item">
-                    <span>Bateria:</span>
-                    <span style="color: #2ecc71;">🔋 98%</span>
-                </div>
             </div>
         </div>
 
         <div class="last-update">
-            Dados atualizados a cada 10 segundos via MQTT
+            Dados integrados: Modelo via SNMP (192.168.100.18) + Temperatura via MQTT (HiveMQ Cloud)
         </div>
     </div>
 
     <script>
         let temperatureHistory = [];
-        let currentTemp = 25.4;
-        let minTemp = 20.1;
-        let maxTemp = 29.8;
-        let avgTemp = 25.2;
+        let deviceData = {};
 
-        // Função para gerar temperatura aleatória entre 20 e 30 graus
-        function generateRandomTemperature() {
-            return (Math.random() * 10 + 20).toFixed(1);
+        // Função para buscar dados do servidor
+        async function fetchDeviceData() {
+            try {
+                const response = await fetch('/api/device-data');
+                deviceData = await response.json();
+                
+                updateDeviceInfo();
+                updateTemperatureData();
+                updateTime();
+                
+            } catch (error) {
+                console.error('Erro ao buscar dados:', error);
+                updateConnectionStatus(false, error.message);
+            }
+        }
+
+        // Função para atualizar informações do dispositivo
+        function updateDeviceInfo() {
+            // Atualizar modelo SNMP
+            document.getElementById('deviceModel').textContent = deviceData.model || 'Carregando...';
+            
+            // Atualizar status SNMP
+            const snmpStatusElement = document.getElementById('snmpStatus');
+            if (deviceData.snmpStatus === 'Conectado') {
+                snmpStatusElement.innerHTML = '🟢 Conectado';
+                snmpStatusElement.style.color = '#2ecc71';
+            } else if (deviceData.snmpStatus === 'Erro') {
+                snmpStatusElement.innerHTML = '🔴 Erro';
+                snmpStatusElement.style.color = '#e74c3c';
+                if (deviceData.snmpError) {
+                    snmpStatusElement.title = deviceData.snmpError;
+                }
+            } else {
+                snmpStatusElement.innerHTML = '🟡 Conectando...';
+                snmpStatusElement.style.color = '#f39c12';
+            }
+            
+            // Atualizar status MQTT
+            const mqttStatusElement = document.getElementById('mqttStatus');
+            if (deviceData.mqttStatus === 'Conectado') {
+                mqttStatusElement.innerHTML = '🟢 Conectado';
+                mqttStatusElement.style.color = '#2ecc71';
+            } else if (deviceData.mqttStatus === 'Erro') {
+                mqttStatusElement.innerHTML = '🔴 Erro';
+                mqttStatusElement.style.color = '#e74c3c';
+                if (deviceData.mqttError) {
+                    mqttStatusElement.title = deviceData.mqttError;
+                }
+            } else {
+                mqttStatusElement.innerHTML = '🟡 Conectando...';
+                mqttStatusElement.style.color = '#f39c12';
+            }
+        }
+
+        // Função para atualizar dados de temperatura
+        function updateTemperatureData() {
+            if (deviceData.temperature) {
+                // Atualizar temperatura MQTT na seção de informações
+                document.getElementById('mqttTemperature').textContent = deviceData.temperature + '°C';
+                
+                // Atualizar temperatura principal
+                document.getElementById('currentTemp').textContent = deviceData.temperature;
+                updateTemperatureStatus(deviceData.temperature);
+                
+                // Adicionar ao histórico
+                temperatureHistory.push(deviceData.temperature);
+                if (temperatureHistory.length > 50) {
+                    temperatureHistory.shift();
+                }
+                
+                updateStatistics();
+                updateChart();
+            }
         }
 
         // Função para atualizar o status da temperatura
@@ -318,9 +385,9 @@
         // Função para atualizar as estatísticas
         function updateStatistics() {
             if (temperatureHistory.length > 0) {
-                minTemp = Math.min(...temperatureHistory).toFixed(1);
-                maxTemp = Math.max(...temperatureHistory).toFixed(1);
-                avgTemp = (temperatureHistory.reduce((a, b) => a + b, 0) / temperatureHistory.length).toFixed(1);
+                const minTemp = Math.min(...temperatureHistory).toFixed(1);
+                const maxTemp = Math.max(...temperatureHistory).toFixed(1);
+                const avgTemp = (temperatureHistory.reduce((a, b) => a + b, 0) / temperatureHistory.length).toFixed(1);
                 
                 document.getElementById('minTemp').textContent = minTemp;
                 document.getElementById('maxTemp').textContent = maxTemp;
@@ -333,63 +400,37 @@
             const chartBars = document.getElementById('chartBars');
             chartBars.innerHTML = '';
             
+            if (temperatureHistory.length === 0) return;
+            
             const recentData = temperatureHistory.slice(-20); // Últimas 20 leituras
-            const maxValue = Math.max(...recentData, 30);
+            const maxValue = Math.max(...recentData, 35);
             
             recentData.forEach(temp => {
                 const bar = document.createElement('div');
                 bar.className = 'bar';
                 const height = (temp / maxValue) * 100;
                 bar.style.height = height + '%';
+                bar.title = `${temp}°C`;
                 chartBars.appendChild(bar);
             });
         }
 
         // Função para atualizar a hora
         function updateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('pt-BR');
-            document.getElementById('lastUpdate').textContent = timeString;
-        }
-
-        // Função principal de atualização
-        function updateTemperature() {
-            currentTemp = parseFloat(generateRandomTemperature());
-            temperatureHistory.push(currentTemp);
-            
-            // Manter apenas as últimas 50 leituras
-            if (temperatureHistory.length > 50) {
-                temperatureHistory.shift();
+            if (deviceData.lastUpdate) {
+                const updateTime = new Date(deviceData.lastUpdate);
+                const timeString = updateTime.toLocaleTimeString('pt-BR');
+                document.getElementById('lastUpdate').textContent = timeString;
             }
-            
-            // Atualizar interface
-            document.getElementById('currentTemp').textContent = currentTemp;
-            updateTemperatureStatus(currentTemp);
-            updateStatistics();
-            updateChart();
-            updateTime();
-            
-            console.log(`Temperatura atualizada: ${currentTemp}°C`);
-        }
-
-        // Inicializar com alguns dados
-        function initializeData() {
-            for (let i = 0; i < 20; i++) {
-                temperatureHistory.push(parseFloat(generateRandomTemperature()));
-            }
-            updateTemperature();
         }
 
         // Inicializar quando a página carregar
         document.addEventListener('DOMContentLoaded', function() {
-            initializeData();
-            updateTime();
+            // Buscar dados iniciais
+            fetchDeviceData();
             
-            // Atualizar a cada 10 segundos (simulando o MQTT)
-            setInterval(updateTemperature, 10000);
-            
-            // Atualizar o relógio a cada segundo
-            setInterval(updateTime, 1000);
+            // Atualizar a cada 5 segundos
+            setInterval(fetchDeviceData, 5000);
         });
     </script>
 </body>
